@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Milyonda Bir</title>
+<meta name="description" content="Milyonlarca çocuktan biri olarak doğ, futbol kariyerini yaşa. Bir futbolcu kariyeri simülasyonu.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <!-- START -->
+  <section id="start">
+    <header class="hero">
+      <div class="eyebrow">Futbol kariyeri simülasyonu</div>
+      <h1>Milyonda <em>Bir</em></h1>
+      <p>Şu anda dünyanın her yerinde milyonlarca çocuk bir topun peşinden koşuyor. Sen de onlardan biri olacaksın. Nerede doğacağını, ne kadar yetenekli olacağını, hangi gözlemcinin seni göreceğini seçemezsin. Sadece her yıl neye emek vereceğini ve büyük kararları seçersin.</p>
+      <div class="odds">
+        <div><b>~%1</b><span>altyapıya girenlerden profesyonel kariyer yapanlar (kabaca)</span></div>
+        <div><b>8</b><span>basamaklı futbol piramidi: mahalleden dünya devine</span></div>
+        <div><b>4</b><span>seninle aynı gün topa başlayan başka çocuk</span></div>
+      </div>
+    </header>
+
+    <div class="setup">
+      <div class="opt">
+        <h3>Doğacağın yer</h3>
+        <div class="seg" data-opt="world">
+          <button type="button" data-v="world" aria-pressed="true">Rastgele dünya</button>
+          <button type="button" data-v="TR" aria-pressed="false">Türkiye</button>
+        </div>
+        <p>Rastgele dünyada ülke, futbol oynayan çocuk sayısına göre seçilir. Nijerya'da, Hindistan'da ya da Brezilya'da doğabilirsin.</p>
+      </div>
+      <div class="opt">
+        <h3>Bir kariyerin uzunluğu</h3>
+        <div class="seg" data-opt="len">
+          <button type="button" data-v="5" aria-pressed="false">Yaklaşık 5 dk</button>
+          <button type="button" data-v="10" aria-pressed="false">Yaklaşık 10 dk</button>
+          <button type="button" data-v="30" aria-pressed="true">Yaklaşık 30 dk</button>
+          <button type="button" data-v="60" aria-pressed="false">Yaklaşık 1 saat</button>
+          <button type="button" data-v="90" aria-pressed="false">Yaklaşık 1,5 saat</button>
+          <span class="or">ya da bir yılın süresini seç</span>
+          <button type="button" data-v="y60" aria-pressed="false">1× · 1 dk</button>
+          <button type="button" data-v="y30" aria-pressed="false">2× · 30 sn</button>
+          <button type="button" data-v="y15" aria-pressed="false">4× · 15 sn</button>
+          <button type="button" data-v="y8" aria-pressed="false">8× · 8 sn</button>
+        </div>
+        <p>Üst sıra, ortalama bir kariyerin baştan sona süresidir. Alt sıra, oyundaki bir yılın kaç saniye süreceğidir. Oynarken istediğin an bu hızlar arasında geçebilir ya da duraklatabilirsin.</p>
+      </div>
+      <div class="opt">
+        <h3>Kararlar</h3>
+        <div class="seg" data-opt="auto">
+          <button type="button" data-v="0" aria-pressed="true">Ben veririm</button>
+          <button type="button" data-v="1" aria-pressed="false">Otomatik, sadece izle</button>
+        </div>
+      </div>
+      <button class="go" id="btnStart" type="button">Sahaya çık</button>
+    </div>
+
+    <div class="how">
+      <div><h3>Aynı gün başlayanlar</h3><p>Seninle aynı gün top oynamaya başlayan dört çocuk daha var. Onların kariyeri de aynı kurallarla, yanında ilerler.</p></div>
+      <div><h3>Her yıl bir odak</h3><p>Antrenman, okul, dinlenme, görünürlük ya da aile. Seçimin beceriyi, sakatlık riskini ve moralini değiştirir.</p></div>
+      <div><h3>Büyük anlar</h3><p>Gözlemci daveti, derbide penaltı, kiralık teklifi, viral video, Körfez parası ve 25'ten fazla karar anı. Buralarda oyun durur ve sen seçersin.</p></div>
+      <div><h3>Ailen ve semtin</h3><p>Babanın mesleği, annenin işi, kardeşlerin ve büyüdüğün semt rastgele belirlenir. Varlıklı bir ailede daha iyi antrenman bulursun; geçim sıkıntısı olan bir evde başka kararlar karşına çıkar.</p></div>
+      <div><h3>Gizli potansiyel</h3><p>Herkesin bir tavanı var ve sen onu bilmiyorsun. Emek seni tavanına yaklaştırır; tavanı aşmanın yolu yok.</p></div>
+    </div>
+
+    <div class="past" id="past" hidden>
+      <div class="eyebrow">Önceki kariyerlerin</div>
+      <ul id="pastList"></ul>
+    </div>
+    <p class="fine">Olasılıklar gerçek futbol piramidinden esinlenen kaba tahminlerdir, resmî istatistik değildir. Maaşlar yaklaşık yıllık € cinsindendir. Kayıtlar sadece bu tarayıcıda tutulur.</p>
+  </section>
+
+  <!-- GAME -->
+  <section id="game" hidden>
+    <div class="top">
+      <div class="who"><h2 id="pName">—</h2><div id="pMeta">—</div></div>
+      <div class="board"><span>Yaş</span><b class="num" id="pAge">7</b></div>
+    </div>
+    <div class="ctrl">
+      <button type="button" id="btnPause" aria-pressed="false">Duraklat</button>
+      <div class="speed" id="speed" role="group" aria-label="Oyun hızı"></div>
+      <button type="button" id="btnAuto" aria-pressed="false">Otomatik karar</button>
+    </div>
+    <div id="decision"></div>
+    <div class="grid">
+      <div style="display:grid;gap:16px;min-width:0">
+        <div class="panel">
+          <div class="shead"><h3 id="sTitle">Yaz arası</h3><span class="eyebrow" id="sMonth">Sezon başlıyor</span></div>
+          <div class="months" id="sBar"></div>
+          <div id="sTable"></div>
+          <ul class="ticks" id="sTicks"></ul>
+        </div>
+        <div class="panel">
+          <h3>Sezon sezon</h3>
+          <ul class="feed" id="feed"></ul>
+        </div>
+        <div class="panel">
+          <div class="shead"><h3>Bu yıl neye odaklanıyorsun?</h3><span class="eyebrow" id="focusN"></span></div>
+          <div class="focus" id="focus"></div>
+        </div>
+        <div class="panel">
+          <h3>Cüzdan ve yatırım</h3>
+          <div class="wallet" id="wallet"></div>
+          <div class="inv" id="inv"></div>
+        </div>
+        <div class="panel">
+          <h3>Harcama</h3>
+          <div id="shop"></div>
+        </div>
+        <div class="panel">
+          <h3>Emlak</h3>
+          <div id="homes"></div>
+        </div>
+      </div>
+      <div style="display:grid;gap:16px;align-content:start;min-width:0">
+        <div class="panel"><h3>Sen</h3><div class="stats" id="stats"></div></div>
+        <div class="panel"><div class="shead"><h3>Form</h3><span class="eyebrow">Aylık maç puanı</span></div><div id="formBox"></div></div>
+        <div class="panel"><h3>Kupa dolabı</h3><div class="cab" id="cab"></div></div>
+        <div class="panel"><h3>Ailen</h3><div class="fam" id="fam"></div></div>
+        <div class="panel tabloid"><h3>Magazin</h3><ul class="mag" id="mag"></ul></div>
+        <div class="panel"><h3>Piramit</h3><div class="ladder" id="ladder"></div></div>
+        <div class="panel"><h3>Aynı gün başlayanlar</h3><div id="peers"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- END -->
+  <section id="end" hidden></section>
+</div>
+
+<script src="oyun.js"></script>
+</body>
+</html>
