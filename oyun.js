@@ -253,6 +253,8 @@ function makePlayer(mode,isYou){
     apps:0,goals:0,caps:0,trophies:0,peakLevel:0,peakSal:0,clubs:[],focus:["train"],inj:0,ended:false,endText:"",endKind:"",log:[],notes:[],pending:null,stay:0};
 }
 
+const TRK=p=>p.c[0]==="TR";
+const FOOD={TR:"döner",ID:"nasi goreng",BR:"pastel",MX:"taco",AR:"choripán",JP:"ramen",KR:"tteokbokki",IT:"pizza",ES:"bocadillo",FR:"krep",DE:"currywurst",EN:"fish and chips",NG:"suya",IN:"samosa",EG:"koşari",MA:"msemen",US:"hamburger",CN:"baozi",VN:"bánh mì",TH:"pad thai",PH:"balut"};
 const FOC={
  train:{t:"Antrenman",kid:1,pro:1,g:.45,fit:-2,moral:-2,inj:.05,bond:4},
  extra:{t:"Hocayla ekstra mesai",kid:1,pro:1,g:.25,bond:10,moral:-1,inj:.02},
@@ -285,7 +287,7 @@ function familyLife(p){
   const F=p.fam,L=[[6,"Ailen tribünde seni izlemeye geldi. Annen en öndeydi."],[5,"Kardeşin okulda ödül aldı, telefonda sevinçten ağladınız."],
     [4,"Baban maçlarını mahalledeki kahvede izliyor, herkese seni anlatıyor."],[-6,"Annen hastalandı, hastanede birkaç gece kaldı."],
     [-5,"Evde para yüzünden büyük bir tartışma çıktı."],[-8,"Deden hayatını kaybetti."],[-4,"Baban maçtan sonra seni herkesin önünde eleştirdi."],
-    [6,"Kuzeninin düğününde sabaha kadar eğlendin."],[-3,"Ailenle bayramı geçiremedin, kamptaydın."]];
+    [6,"Kuzeninin düğününde sabaha kadar eğlendin."],[-3,TRK(p)?"Ailenle bayramı geçiremedin, kamptaydın.":"Ailenle bayram tatilini geçiremedin, kamptaydın."]];
   if(F.cls===0)L.push([-6,"Ev sahibi kirayı artırdı, ailen zor durumda."],[-5,"Babanın iş yerinde kaza oldu, bir süre çalışamayacak."]);
   if(F.cls===2)L.push([4,"Ailen sana sürpriz bir tatil hediye etti."]);
   if(F.sib)L.push([5,"Küçük kardeşin seni örnek alıp futbola başladı."]);
@@ -602,9 +604,9 @@ function tabloid(p){
 
 const EV=[
  // ===== ÇOCUKLUK (8-15) =====
- {id:"window",w:p=>p.age>=8&&p.age<=13,auto:0,m:p=>({title:"Cam kırıldı!",text:"Mahallede attığın şut komşu Hatice teyzenin camını tuzla buz etti. Herkes kaçıyor.",choices:[
-   {t:"Kapıyı çal, itiraf et",s:"Moral ↓ · Dürüstlük",fx:q=>{q.moral-=2;q.edu+=2;log(q,"İtiraf ettin. Hatice teyze kızdı ama sonra sana kurabiye verdi. Babana camı ödettin.","");}},
-   {t:"Sen de kaç",s:"Moral ↑ · Yakalanabilirsin",fx:q=>{if(R()<.45){q.moral-=7;log(q,"Kaçtın ama biri seni görmüş. Bir ay top yasağı, harçlık kesildi. (moral −7)","bad");}else{q.moral+=3;log(q,"Kaçtın, kimse görmedi. Kalbin bir hafta küt küt attı.","");}}}]})},
+ {id:"window",w:p=>p.age>=8&&p.age<=13,auto:0,m:p=>{const nb=pick(nameSet(p.c).f);return {title:"Cam kırıldı!",text:"Mahallede attığın şut komşun "+nb+" teyzenin camını tuzla buz etti. Herkes kaçıyor.",choices:[
+   {t:"Kapıyı çal, itiraf et",s:"Moral ↓ · Dürüstlük",fx:q=>{q.moral-=2;q.edu+=2;log(q,"İtiraf ettin. "+nb+" teyze kızdı ama sonra sana kurabiye verdi. Babana camı ödettin.","");}},
+   {t:"Sen de kaç",s:"Moral ↑ · Yakalanabilirsin",fx:q=>{if(R()<.45){q.moral-=7;log(q,"Kaçtın ama biri seni görmüş. Bir ay top yasağı, harçlık kesildi. (moral −7)","bad");}else{q.moral+=3;log(q,"Kaçtın, kimse görmedi. Kalbin bir hafta küt küt attı.","");}}}]};}},
  {id:"star",w:p=>p.age>=8&&p.age<=14,auto:0,m:p=>({title:"Ünlü bir futbolcu okulunda",text:"Milli takımın yıldızlarından biri okulunuza söyleşiye geldi. Soru sırası sende.",choices:[
    {t:"Formasını imzalat",s:"Moral ↑",fx:q=>{q.moral+=6;log(q,"Formanı imzaladı ve 'büyüyünce seni sahada görürüm' dedi. O formayı yıllarca yıkamadın.","good");}},
    {t:"Nasıl bu kadar iyi olduğunu sor",s:"Gelişim ↑",fx:q=>{q.skill+=1;q.moral+=2;log(q,"'Herkes gittikten sonra 100 şut daha' dedi. O gün duvara karşı 100 şut çektin.","good");}}]})},
@@ -624,7 +626,7 @@ const EV=[
    {t:"Sabret, vücudun alışsın",s:"Bu yıl gelişim ↓ · Uzun vadede ↑",fx:q=>{q.skill-=1.5;q.pot+=1;log(q,"Bir yıl beceriksiz hissettin ama yeni boyunla hava toplarında rakipsizsin.","");}},
    {t:"Ekstra koordinasyon çalışması",s:"Gelişim ↑ · Sakatlık riski",fx:q=>{q.skill+=.5;q.fit-=4;log(q,"Merdiven ve ip çalışmaları yaptın. Dizlerin biraz ağrıdı.","");}}]})},
  {id:"sneak",w:p=>p.level===2&&p.age>=13&&p.age<=17,auto:1,m:p=>({title:"Yurttan gece kaçmak",text:"Akademi yurdundaki arkadaşların gece gizlice şehre inmeyi planlıyor.",choices:[
-   {t:"Onlarla git",s:"Moral ↑ · Yakalanırsan hoca bağı ↓↓",fx:q=>{q.moral+=6;if(R()<.35){q.bond-=15;log(q,"Gece 2'de yurda dönerken hocaya yakalandınız. Bir ay idari ceza. (hoca bağı −15)","bad");}else log(q,"Şehirde döner yediniz, kimse fark etmedi. Hayatının en güzel gecelerinden biri.","good");}},
+   {t:"Onlarla git",s:"Moral ↑ · Yakalanırsan hoca bağı ↓↓",fx:q=>{q.moral+=6;if(R()<.35){q.bond-=15;log(q,"Gece 2'de yurda dönerken hocaya yakalandınız. Bir ay idari ceza. (hoca bağı −15)","bad");}else log(q,"Şehirde gece yarısı "+(FOOD[q.c[0]]||"sokak yemeği")+" yediniz, kimse fark etmedi. Hayatının en güzel gecelerinden biri.","good");}},
    {t:"Yurtta kal",s:"Moral ↓ · Hoca bağı ↑",fx:q=>{q.moral-=3;q.bond+=3;log(q,"Yurtta kaldın. Ertesi gün arkadaşların sabah antrenmanında uyukluyordu.","");}}]})},
  {id:"rivalpos",w:p=>p.level===2&&p.age>=13,auto:0,m:p=>({title:"Mevkine yeni bir yetenek geldi",text:"Akademiye senin mevkinde oynayan, herkesin konuştuğu bir çocuk transfer edildi.",choices:[
    {t:"Rekabete gir",s:"Gelişim ↑ · Moral ↓",fx:q=>{q.skill+=1.5;q.moral-=3;log(q,"Her antrenmanda onunla yarıştın. İkiniz de daha iyi oldunuz.","good");}},
@@ -707,7 +709,7 @@ const EV=[
    {t:"Barınağa bağış yap",s:"Ün ↑",fx:q=>{q.fame+=2;q.money=Math.max(0,q.money-500);log(q,"Barınağa bağış yaptın.","");}}]})},
  {id:"sugar",w:p=>p.level>=3,auto:1,m:p=>({title:"Diyetisyenin listesi",text:"Kulübün diyetisyeni şekeri, gece yemeklerini ve gazlı içecekleri tamamen bırakmanı istiyor.",choices:[
    {t:"Harfiyen uy",s:"Fizik ↑↑ · Moral ↓",fx:q=>{q.fit+=6;q.moral-=4;log(q,"Altı ay şeker yemedin. Vücut yağ oranın %8'e indi.","good");}},
-   {t:"Hafta sonları kaçamak",s:"Moral ↑ · Fizik ↓",fx:q=>{q.moral+=3;q.fit-=2;log(q,"Pazar günleri annenin baklavasından vazgeçmedin.","");}}]})},
+   {t:"Hafta sonları kaçamak",s:"Moral ↑ · Fizik ↓",fx:q=>{q.moral+=3;q.fit-=2;log(q,TRK(q)?"Pazar günleri annenin baklavasından vazgeçmedin.":"Pazar günleri annenin yaptığı tatlılardan vazgeçmedin.","");}}]})},
  {id:"anxiety",w:p=>p.age>=18&&p.level>=3,auto:0,m:p=>({title:"Maç öncesi kaygı",text:"Son haftalarda maç öncesi geceler uyuyamıyorsun, midene kramplar giriyor.",choices:[
    {t:"Spor psikoloğuna git",s:"Moral ↑↑ · Para ↓",fx:q=>{q.money=Math.max(0,q.money-Math.round(500+salary(q)*.01));q.moral+=9;log(q,"Spor psikoloğuyla çalışmaya başladın. Nefes egzersizleri işe yaradı.","good");}},
    {t:"Kendin hallet",s:"Moral ↓",fx:q=>{q.moral-=5;log(q,"Kimseye söylemedin. Zor haftalar geçirdin.","bad");}}]})},
@@ -748,7 +750,7 @@ const EV=[
    {t:"El ele çık, ilişkini açıkla",s:"Manşetlere hazır ol.",fx:q=>{q.partner=pt;q.fame+=12;q.moral+=8;addMag(q,"{n} ile "+pt.job+" {partner} aşkı belgelendi!");}},
    {t:"Sadece arkadaşız de",s:"Özel hayatın özel kalsın.",fx:q=>{q.fame+=3;log(q,"\"Sadece arkadaşız\" dedin. Kimse inanmadı.","");}}]}}},
  {id:"wedding",w:p=>p.partner&&!p.married&&p.age>=24,auto:1,m:p=>({title:"Evlilik",text:p.partner.name+" evlenme teklifini kabul etti! Düğün nasıl olsun?",choices:[
-   {t:"Boğaz'da şatafatlı düğün",s:"Birikiminin bir kısmı gider, ama yılın düğünü olur.",fx:q=>{const c=Math.min(q.money*.3,400000);q.money-=c;q.spent+=c;q.married=true;q.fame+=10;q.moral+=10;addMag(q,"Yılın düğünü: {n} ve {partner} dünyaevine girdi!");}},
+   {t:TRK(p)?"Boğaz'da şatafatlı düğün":"Lüks bir otelde şatafatlı düğün",s:"Birikiminin bir kısmı gider, ama yılın düğünü olur.",fx:q=>{const c=Math.min(q.money*.3,400000);q.money-=c;q.spent+=c;q.married=true;q.fame+=10;q.moral+=10;addMag(q,"Yılın düğünü: {n} ve {partner} dünyaevine girdi!");}},
    {t:"Sade bir nikah",s:"Sadece aile ve yakın dostlar.",fx:q=>{q.married=true;q.moral+=12;log(q,p.partner.name+" ile sade bir törenle evlendin.","good");}}]})},
  {id:"paparazzi",w:p=>p.fame>=30&&p.level>=4,auto:0,m:p=>({title:"Paparazzi kapında",text:"Gece 2'de evinin önündeler. Kamerayı yüzüne tuttular.",choices:[
    {t:"Kameraya el salla",s:"Sakin ol.",fx:q=>{q.fame+=3;addMag(q,"{n} gece yarısı bile güler yüzlü.");}},
@@ -799,10 +801,10 @@ const EV=[
    {t:"Git, erken dönersin",s:"Moral ↑ · Hoca bağı ↓ · Fotoğrafın çekilebilir.",fx:q=>{q.moral+=8;q.bond-=8;q.fit-=3;if(R()<.3){q.fame-=8;q.bond-=12;log(q,"Partiye gittin, gece 3'te çekilen fotoğrafın sosyal medyaya düştü. Kulüp ceza kesti. (moral +8, hoca bağı −20)","bad");}else log(q,"Partiye gittin, arkadaşın çok mutlu oldu. Hoca yorgun olduğunu fark etti. (moral +8, hoca bağı −8)","");}},
    {t:"Evde kal",s:"Moral ↓ · Hoca bağı ↑",fx:q=>{q.moral-=6;q.bond+=4;q.skill+=.3;log(q,"Partiye gitmedin, arkadaşın kırıldı. Hoca derbiye hazırlığını övdü. (moral −6, hoca bağı +4)","");}}]})},
  {id:"bday",w:p=>p.age>=12&&p.age<=17&&p.level>=1,auto:1,m:p=>{const fr=firstName(fullName(p.c,false));return {title:"Arkadaşının doğum günü",text:"Çocukluk arkadaşın "+fr+" doğum günü yapıyor. Aynı akşam antrenman var.",choices:[
-   {t:"Doğum gününe git",s:"Moral ↑ · Hoca bağı ↓",fx:q=>{q.moral+=7;q.bond-=6;log(q,fr+"'in doğum gününe gittin, gece boyunca güldünüz. Hoca antrenmanı kaçırdığını not etti. (moral +7, hoca bağı −6)","good");}},
+   {t:"Doğum gününe git",s:"Moral ↑ · Hoca bağı ↓",fx:q=>{q.moral+=7;q.bond-=6;log(q,suf(fr,"in")+" doğum gününe gittin, gece boyunca güldünüz. Hoca antrenmanı kaçırdığını not etti. (moral +7, hoca bağı −6)","good");}},
    {t:"Antrenmana git",s:"Moral ↓ · Hoca bağı ↑",fx:q=>{q.moral-=5;q.bond+=4;q.skill+=.3;log(q,"Antrenmana gittin. "+fr+" biraz küstü. (moral −5, hoca bağı +4)","");}}]};}},
  {id:"fwed",w:p=>p.age>=22&&p.level>=3,auto:1,m:p=>{const fr=firstName(fullName(p.c,false));return {title:"Arkadaşının düğünü",text:"Mahalleden kankan "+fr+" evleniyor, seni sağdıç istiyor. Düğün kamp gününe denk geliyor.",choices:[
-   {t:"Kamptan izin iste, düğüne git",s:"Moral ↑ · Hoca bağı ↓",fx:q=>{q.moral+=9;q.bond-=7;log(q,fr+"'in düğününde sağdıç oldun, halay başı çektin. Hoca izni zor verdi. (moral +9, hoca bağı −7)","good");}},
+   {t:"Kamptan izin iste, düğüne git",s:"Moral ↑ · Hoca bağı ↓",fx:q=>{q.moral+=9;q.bond-=7;log(q,suf(fr,"in")+" düğününde sağdıç oldun, "+(TRK(q)?"halay başı çektin.":"sabaha kadar dans ettin.")+" Hoca izni zor verdi. (moral +9, hoca bağı −7)","good");}},
    {t:"Kampta kal, görüntülü ara",s:"Moral ↓ · Hoca bağı ↑",fx:q=>{q.moral-=7;q.bond+=4;log(q,"Düğüne gidemedin. Videoda herkes seni sordu. (moral −7, hoca bağı +4)","");}}]};}},
  {id:"derby",w:p=>p.level>=4,auto:0,m:p=>({title:"Derbide son dakika penaltısı",text:"Stat ayakta. Topu alıp noktaya koyabilir ya da penaltıcıya bırakabilirsin.",choices:[
    {t:"Topu al",s:"Ya efsane ya hedef.",fx:q=>{if(R()<.55+q.skill/500){q.fame+=12;q.moral+=8;log(q,"Penaltıyı attın, derbi sizin! Taraftar adını bağırdı.","big");}else{q.fame-=6;q.moral-=12;log(q,"Kaleci uzandı. Haftalarca sosyal medyada hedef oldun.","bad");}}},
@@ -1281,7 +1283,7 @@ function monthTick(i){
     if(missF>0)t+=" "+(p.injKind==="ban"?(miss>=nf?"Bütün ay cezalısın":"Ayın bir kısmında cezalısın"):(miss>=nf?"Bütün ay sakatsın":"Ayın bir kısmında sakatsın"))+" ("+p.injName.toLowerCase()+")"+(p.injM>1?", dönüşe "+fmtM(p.injM-1)+".":".");
     const fl=p.level===1?["Beden öğretmeni seni kaptan yaptı.","Ailen maçı izlemeye geldi.","Okulda herkes golünü konuşuyor.",""]:
       p.level===2?["Altyapı hocası seni kenara çağırıp tebrik etti.","Kulübün gözlemcileri tribündeydi.","Hafta sonu eve, "+semt+" semtine gittin.","",(p.age>=16&&eff(p)>=T[4]-2&&R()<.35)?"A takım hocası bir antrenmana seni de çağırdı.":""]:
-      p.level===3?["Hafta içi işten sonra antrenmana yetiştin.","Tribünde 200 kişi vardı.","Maç sonrası takımla çay ocağında oturdunuz.",""]:
+      p.level===3?["Hafta içi işten sonra antrenmana yetiştin.","Tribünde 200 kişi vardı.",(TRK(p)?"Maç sonrası takımla çay ocağında oturdunuz.":"Maç sonrası takımla kulüp lokalinde oturdunuz."),""]:
       ["Taraftar adını bağırdı.","Hoca basın toplantısında seni övdü.","Bir maçta sarı kart gördün.","",""];
     const f=a>0||p.level<=2&&!missF?pick(fl):"";if(f)t+=" "+f;
   }
@@ -1360,7 +1362,7 @@ function render(){
     '<p style="margin:8px 0 0;font-size:12px;color:var(--muted)">Yatır, birikiminin dörtte birini aktarır. Getiriler her sezon sonunda hesaplanır.</p></details>';
   $("inv").querySelectorAll("[data-in]").forEach(b=>b.onclick=()=>moveIn(b.dataset.in));
   $("inv").querySelectorAll("[data-out]").forEach(b=>b.onclick=()=>moveOut(b.dataset.out));
-  $("shop").innerHTML=(P.level<3&&P.money<1000?'<p>İlk maaşını aldığında burası açılacak. Şimdilik harçlığın sadece simit parası.</p>':'')+
+  $("shop").innerHTML=(P.level<3&&P.money<1000?'<p>İlk maaşını aldığında burası açılacak. Şimdilik harçlığın sadece '+(P.c[0]==="TR"?"simit parası":"cep harçlığı")+'.</p>':'')+
     CATS.map(([cat,ids])=>{const items=ids.map(id=>SHOP.find(x=>x.id===id));const own=items.filter(it=>P.owned[it.id]).length;
       return '<details class="grp" data-k="c-'+cat+'"'+op("c-"+cat)+'><summary>'+cat+'<small>'+own+'/'+items.length+' alındı</small></summary><div class="shop">'+
       items.map(it=>{const o=P.owned[it.id];return '<button type="button" class="item'+(o?" own":"")+'" data-buy="'+it.id+'"'+(o||P.money<it.p?" disabled":"")+'><b>'+esc(it.t)+'</b><span>'+(o?"Senin":fmtE(it.p))+'</span>'+(it.inc?'<small>Gelir getirir'+(it.risk?", riskli":"")+'</small>':'')+'</button>';}).join("")+'</div></details>';}).join("");
