@@ -184,9 +184,13 @@ function clubName(c,city,big){
   return R()<.5?city+" "+pick(c[9]):pick(c[9])+" "+city;
 }
 function leagueName(c,lvl){const L=LG[c[0]]||[c[1]+" 1. Ligi",c[1]+" 2. Ligi",c[1]+" amatör ligi"];return lvl>=5?L[0]:lvl===4?L[1]:L[2];}
-function club(p,lvl,abroad,home){
+function club(p,lvl,abroad,home,stay){
   let c=p.c;
+  const curC=p.club&&p.club.country&&C.find(x=>x[0]===p.club.country[0]);
   if(abroad){const strong=C.filter(x=>x[3]>=(lvl>=6?8.8:7.8)&&x!==p.c);c=pick(strong);}
+  else if(curC&&homeMax(curC)>=lvl&&(stay||lvl>homeMax(p.c)))c=curC; // aynı seviyede transfer: oynadığın ülkede kal
+  else if(lvl>homeMax(c))c=pick(C.filter(x=>homeMax(x)>=lvl&&x!==p.c)); // ülkende o seviye yoksa güçlü bir ülkeye
+  if(home&&c!==p.c)home=false;
   const city=home?p.fam.city:cityOf(c);
   return {name:clubName(c,city,lvl===7&&c[0]!=="TR"),country:c,league:lvl>=3?leagueName(c,lvl):""};
 }
@@ -297,12 +301,30 @@ function familyLife(p){
 
 function log(p,text,kind){p.log.push({age:p.age,text,kind:kind||""});}
 
+function transferOffers(p,why){
+  const L=p.level,home=p.c,cur=(p.club&&C.find(x=>x[0]===p.club.country[0]))||home,E=eff(p);
+  const roleOf=l=>l<=3?"İlk 11":E>=T[l]+3?"İlk 11":E>=T[l]-2?"Rotasyon":"Yedek";
+  const used=new Set([p.club&&p.club.name]);
+  const mk=(cc,lvl,tag)=>{let cl,t=0;do{cl={name:clubName(cc,cityOf(cc),lvl===7&&cc[0]!=="TR"),country:cc,league:leagueName(cc,lvl)};}while(used.has(cl.name)&&t++<12);used.add(cl.name);
+    const role=roleOf(lvl),sal=Math.round(salary(Object.assign({},p,{level:lvl,club:cl}))*(role==="Yedek"?.75:role==="Rotasyon"?.9:1)*rnd(.8,1.25)/500)*500;return {cl,lvl,role,sal,tag};};
+  const O=[];
+  if(homeMax(cur)>=L){O.push(mk(cur,L,"Aynı lig"));O.push(mk(cur,L,"Aynı lig"));}
+  const same=C.filter(x=>x!==cur&&homeMax(x)>=L&&x[3]>=(L>=6?8.5:6));
+  const picks=same.sort(()=>R()-.5).slice(0,3);
+  for(const c of picks)O.push(mk(c,L,c===home?"Memlekete dönüş":"Yurt dışı · aynı seviye"));
+  if(L>=5)O.push(mk(cur,Math.min(L-1,homeMax(cur))>=4?Math.min(L-1,homeMax(cur)):4,"Bir alt seviye · forma garantisi"));
+  const choices=O.map(o=>({t:o.cl.name+" · "+o.cl.league,s:o.tag+" · "+o.cl.country[1]+" · "+o.role+" · ~"+fmtE(o.sal)+"/yıl",
+    fx:q=>{setLevel(q,o.lvl,o.cl);q.moral+=q.abroad&&o.cl.country!==cur?(q.lang>=2?-1:-5):2;q.fame+=o.lvl>=6?3:0;
+      log(q,o.cl.name+" ("+o.cl.league+", "+o.cl.country[1]+") ile anlaştın. Rolün: "+o.role.toLowerCase()+", yıllık ~"+fmtE(o.sal)+".",o.lvl>=6?"big":"good");}}));
+  choices.push({t:"Vazgeç, kulübünde kal",s:"Hocayla arandaki sorun sürer",fx:q=>{q.moral-=3;log(q,"Transferden vazgeçtin, kulübünde kaldın.","");}});
+  return {kind:"xfer",title:"Transfer teklifleri",text:(why||"Menajerin kulüplerle görüştü.")+" "+O.length+" teklif var:",choices,auto:0};
+}
 function renewOffers(p){
   const L=p.level,home=p.c,cur=(p.club&&C.find(x=>x[0]===p.club.country[0]))||home,E=eff(p);
   const roleOf=l=>l<=3?"İlk 11":E>=T[l]+3?"İlk 11":E>=T[l]-2?"Rotasyon":"Yedek";
   const used=new Set([p.club&&p.club.name]);
   const mk=(cc,lvl,tag)=>{let cl,t=0;do{cl={name:clubName(cc,cityOf(cc),false),country:cc,league:lvl>=3?leagueName(cc,lvl):""};}while(used.has(cl.name)&&t++<10);used.add(cl.name);
-    const role=roleOf(lvl),sal=Math.round(salary(Object.assign({},p,{level:lvl,club:cl}))*(role==="Yedek"?.75:role==="Rotasyon"?.9:1)/500)*500;
+    const role=roleOf(lvl),sal=Math.round(salary(Object.assign({},p,{level:lvl,club:cl}))*(role==="Yedek"?.75:role==="Rotasyon"?.9:1)*rnd(.8,1.25)/500)*500;
     return {cl,lvl,role,sal,abroad:cc[0]!==home[0],tag};};
   const O=[mk(cur,L,"Aynı lig"),mk(cur,Math.max(3,L-1),L-1<=3?"Amatör lig":"Bir alt lig"),mk(cur,Math.max(3,L-2),L-2<=3?"Amatör lig":"İki alt lig")];
   const ex=x=>x[0]!==home[0]&&x[0]!==cur[0];
@@ -319,7 +341,7 @@ function renewOffers(p){
 }
 function setLevel(p,l,cl,abroad){
   p.level=l;p.peakLevel=Math.max(p.peakLevel,l);
-  if(cl){p.club=cl;p.abroad=!!abroad;p.clubs.push(cl.name);p.bond=clamp(48+ri(-8,10),0,100);}
+  if(cl){p.club=cl;p.abroad=!!(cl.country&&cl.country[0]!==p.c[0]);p.clubs.push(cl.name);p.bond=clamp(48+ri(-8,10),0,100);}
 }
 
 // One season. Returns nothing; may set p.pending (decision)
@@ -667,7 +689,7 @@ const EV=[
  {id:"salary",w:p=>p.level>=3&&p.level<=5,auto:1,m:p=>({title:"Maaşlar ödenmiyor",text:(p.club?p.club.name:"Kulübün")+" üç aydır maaş ödemiyor. Kulüp başkanı 'sabredin' diyor.",choices:[
    {t:"Sabret",s:"Moral ↓",fx:q=>{q.moral-=7;if(R()<.5){log(q,"Sezon sonunda maaşlarını aldın. Sabrın karşılık buldu.","good");}else{const l=salary(q)*.25;q.money=Math.max(0,q.money-l);log(q,"Maaşlarının bir kısmı hiç ödenmedi ("+fmtE(Math.round(l))+" kayıp).","bad");}}},
    {t:"FIFA'ya şikâyet et",s:"Paran garantide · Hoca bağı ↓",fx:q=>{q.bond-=8;log(q,"FIFA'ya başvurdun. Paranı aldın ama kulüpte yalnız kaldın.","");}},
-   {t:"Sözleşmeyi feshet",s:"Aynı seviyede yeni kulüp",fx:q=>{setLevel(q,q.level,club(q,q.level));q.moral+=2;log(q,"Sözleşmeni feshettin ve "+q.club.name+" ile anlaştın.","good");}}]})},
+   {t:"Sözleşmeyi feshet",s:"Teklifleri gör, kulübünü seç",fx:q=>{log(q,"Maaşların ödenmediği için sözleşmeni feshettin.","");q.pending=transferOffers(q,"Artık serbest oyuncusun.");}}]})},
  {id:"doping",w:p=>p.level>=3&&p.age>=20&&!(p.injM>0),auto:0,m:p=>({title:"Takım doktorunun 'vitaminleri'",text:"Takım doktoru performansını artıracak 'özel vitamin' iğneleri öneriyor. İçeriğini söylemiyor.",choices:[
    {t:"Reddet",s:"Hoca bağı ↓",fx:q=>{q.bond-=3;log(q,"İğneyi reddettin. Doktor omuz silkti.","");}},
    {t:"Kabul et",s:"Fizik ↑ · Doping testinde yakalanabilirsin",fx:q=>{q.fit+=8;if(R()<.3){const m=Math.round(rnd(6,12));q.injM=m;q.injName="Doping cezası";q.injKind="ban";q.fame=clamp(q.fame-20,0,100);q.moral-=15;log(q,"Doping testi pozitif çıktı! "+m+" ay men cezası.","bad");addMag(q,"Doping skandalı! {n} "+m+" ay men cezası aldı.");}else log(q,"İğneleri oldun, kendini çok enerjik hissettin. Test hiç gelmedi.","");}}]})},
@@ -819,7 +841,7 @@ const EV=[
    {t:"Pazubendi tak",s:"Sorumluluk seninle.",fx:q=>{q.moral+=8;q.bond+=10;q.fame+=6;log(q,"Artık kaptansın.","big");}},
    {t:"Teşekkür et, reddet",s:"Kendi oyununa odaklan.",fx:q=>log(q,"Kaptanlığı tecrübeli bir arkadaşına bıraktın.","")}]})},
  {id:"newcoach",w:p=>p.level>=4&&p.age>=19,auto:1,m:p=>({title:"Yeni hoca seni sevmiyor",text:"Takıma gelen yeni teknik direktör seni planlarında görmüyor.",choices:[
-   {t:"Transfer iste",s:"Aynı seviyede yeni kulüp.",fx:q=>{setLevel(q,q.level,club(q,q.level));log(q,q.club.name+" kulübüne transfer oldun.","");}},
+   {t:"Transfer iste",s:"Teklifleri gör, kulübünü seç",fx:q=>{log(q,"Kulübünden transfer istedin.","");q.pending=transferOffers(q,"Yönetim seni bırakmayı kabul etti.");}},
    {t:"Antrenmanda kendini göster",s:"Sabır.",fx:q=>{if(R()<.5){q.skill+=2;q.bond=70;log(q,"Hocanın fikrini değiştirdin. Artık vazgeçilmezsin.","good");}else{q.moral-=10;q.bond=20;log(q,"Ne yaptıysan olmadı. Kayıp bir sezon.","bad");}}}]})},
  {id:"home",w:p=>p.age>=17&&p.abroad&&p.lang<3,auto:1,m:p=>({title:"Memleket özlemi",text:"Yurt dışında yalnızsın. Annen telefonda her seferinde ağlıyor.",choices:[
    {t:"Aileni yanına getir",s:"Masraflı ama huzurlu.",fx:q=>{q.moral+=12;q.money*=.8;log(q,"Ailen yanına taşındı. Ev artık ev gibi.","good");}},
@@ -855,7 +877,7 @@ function peerSeason(q){
   if(q.ended)return;
   q.focus=q.age<16?[pick(["train","train","school","show","family"]),pick(["street","friends","family","school","extra"])]:[pick(["train","train","rest","show"]),pick(["extra","diet","video","family","gym"]),pick(["train","rest","mental","charity","lang"])];
   season(q);
-  if(q.pending){const d=q.pending;let i=d.auto;if(d.kind==="academy"||d.kind==="offer"||d.kind==="release")i=R()<.82?0:1;if(d.kind==="retire")i=R()<.7?0:1;if(d.kind==="agent")i=0;resolve(q,i);}
+  if(q.pending){const d=q.pending;let i=d.auto;if(d.kind==="academy"||d.kind==="offer"||d.kind==="release")i=R()<.82?0:1;if(d.kind==="retire")i=R()<.7?0:1;if(d.kind==="agent")i=0;resolve(q,i);if(q.pending&&q.pending.kind==="xfer")resolve(q,0);}
   if(q.age>=42&&!q.ended)endCareer(q,"Jübile","Uzun bir kariyer.","pro");
 }
 function statusOf(q){
@@ -906,7 +928,7 @@ function schedule(){
   const d=monthMs();renderTicker(d);
   timer=setTimeout(step,d);
 }
-function autoResolve(){const d=P.pending;let i=d.auto;if(d.kind==="academy"||d.kind==="offer"||d.kind==="release")i=0;if(d.kind==="retire")i=P.age>=35?0:1;if(d.kind==="agent")i=0;resolve(P,i);waiting=false;$("decision").innerHTML="";render();if(P.ended)return finish();schedule();}
+function autoResolve(){const d=P.pending;let i=d.auto;if(d.kind==="academy"||d.kind==="offer"||d.kind==="release")i=0;if(d.kind==="retire")i=P.age>=35?0:1;if(d.kind==="agent")i=0;resolve(P,i);waiting=false;$("decision").innerHTML="";render();if(P.ended)return finish();if(P.pending)return autoResolve();schedule();}
 function step(){
   if(!P||P.ended)return;
   if(month===0){
@@ -1321,7 +1343,7 @@ function showDecision(){
   const d=P.pending;
   $("decision").innerHTML='<div class="decide"><div class="eyebrow">Karar anı · '+P.age+' yaş</div><h3>'+esc(d.title)+'</h3><p>'+esc(d.text)+'</p><div class="choices">'+
     d.choices.map((c,i)=>'<button type="button" data-i="'+i+'">'+esc(c.t)+'<small>'+esc(c.s)+'</small></button>').join("")+'</div></div>';
-  $("decision").querySelectorAll("button").forEach(b=>b.onclick=()=>{resolve(P,+b.dataset.i);waiting=false;$("decision").innerHTML="";render();if(P.ended)return finish();schedule();});
+  $("decision").querySelectorAll("button").forEach(b=>b.onclick=()=>{resolve(P,+b.dataset.i);waiting=false;$("decision").innerHTML="";render();if(P.ended)return finish();if(P.pending){if(auto)return autoResolve();return showDecision();}schedule();});
   $("decision").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 function showReflect(age){
